@@ -1,0 +1,54 @@
+version: '3'
+services:
+  hub: #service name
+    image: selenium/hub:4.16 # image name
+    ports:
+      - "4444:4444" # port on which we can see the ui
+      #- "4442:4442" # to enable is for connecting with external node
+      #- "4443:4443" # to enable is for connecting with external node
+  chrome:
+    image: selenium/node-chrome:4.16
+    shm_size: '2g' # shared memory
+    depends_on: # on which container it depending
+      - hub
+    environment: # environment variables
+      - SE_EVENT_BUS_HOST=hub #identify host (HUB)
+      - SE_EVENT_BUS_PUBLISH_PORT=4442  # on which port its publish
+      - SE_EVENT_BUS_SUBSCRIBE_PORT=4443  #on which port its subscribed
+      - SE_NODE_OVERRIDE_MAX_SESSIONS=true  #to override the maximum session count
+      - SE_NODE_MAX_SESSIONS=4 # how many sessions needed
+      - SE_VNC_NO_PASSWORD=1 # this is for no password for watching in grid ui
+  firefox:
+    image: selenium/node-firefox:4.16
+    shm_size: '2g' #sharedmemory
+    depends_on:
+      - hub
+    environment:
+      - SE_EVENT_BUS_HOST=hub
+      - SE_EVENT_BUS_PUBLISH_PORT=4442
+      - SE_EVENT_BUS_SUBSCRIBE_PORT=4443
+      - SE_NODE_OVERRIDE_MAX_SESSIONS=true
+      - SE_NODE_MAX_SESSIONS=4
+      - SE_VNC_NO_PASSWORD=1
+  vendor-portal:
+    image: singtelauto/selenium-docker
+    depends_on:
+      - hub
+    environment:
+      - BROWSER=chrome
+      - HUB_HIST=hub
+      - THREAD_COUNT=3
+      - TEST_SUITE=vendor-portal.xml
+    volumes:
+      - ./output/vendor-portal:/home/Selenium-docker/test-output
+  flight-reservation:
+      image: singtelauto/selenium-docker
+      depends_on:
+        - hub
+      environment:
+        - BROWSER=firefox
+        - HUB_HIST=hub
+        - THREAD_COUNT=4
+        - TEST_SUITE=flight-reservation.xml
+      volumes:
+        - ./output/flight-reservation:/home/Selenium-docker/test-output
